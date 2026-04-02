@@ -32,3 +32,20 @@
 2026-04-02 11:43:09 - ifc_reader - INFO - Input file: 23BIM.ifc
 2026-04-02 11:43:09 - ifc_reader - INFO - File size: 988.70 MB
 2026-04-02 11:43:09 - ifc_reader - INFO - Opening IFC file...
+2026-04-02 11:46:00 - ifc_reader - INFO - File opened successfully
+2026-04-02 11:46:00 - ifc_reader - INFO - Detecting IFC schema...
+2026-04-02 11:46:00 - ifc_reader - INFO - Schema detected: IFC2X3
+2026-04-02 11:46:00 - ifc_reader - INFO - Validating schema...
+2026-04-02 11:46:00 - ifc_reader - INFO - Schema is fully supported
+2026-04-02 11:46:00 - ifc_reader - INFO - ----------------------------------------------------------------------
+2026-04-02 11:46:00 - ifc_reader - INFO - FILE SUMMARY:
+2026-04-02 11:46:00 - ifc_reader - INFO -   Path: C:\Users\cathy\Downloads\Prompt\data\23BIM.ifc
+2026-04-02 11:46:00 - ifc_reader - INFO -   Schema: IFC2X3
+2026-04-02 11:46:00 - ifc_reader - INFO -   File object: file
+2026-04-02 11:46:00 - ifc_reader - INFO - ----------------------------------------------------------------------
+2026-04-02 11:46:00 - ifc_reader - INFO - ======================================================================
+2026-04-02 11:46:00 - ifc_reader - INFO - FASE 2: IFC Schema Detection & File Reading
+2026-04-02 11:46:00 - ifc_reader - INFO - ======================================================================
+2026-04-02 11:46:00 - ifc_reader - INFO - Input file: 43BIM.ifc
+2026-04-02 11:46:00 - ifc_reader - INFO - File size: 1001.08 MB
+2026-04-02 11:46:00 - ifc_reader - INFO - Opening IFC file...

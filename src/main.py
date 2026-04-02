@@ -64,6 +64,7 @@ class IFCMaterialExtractor:
         self.elements = []
         self.element_stats = {}
         self.materials = []
+        self.material_stats = {}
         self.aggregated_data = None
         self.extraction_time = None
         
@@ -171,19 +172,18 @@ class IFCMaterialExtractor:
             return
         
         try:
-            material_count = 0
-            for elem_info in self.elements:
-                elem = elem_info['object']
-                if hasattr(elem, 'HasAssociations') and elem.HasAssociations:
-                    for rel in elem.HasAssociations:
-                        if rel.is_a("IfcRelAssociatesMaterial"):
-                            material_count += 1
-                            # Detailed extraction happens in Fase 9 aggregation
+            from material_mapper import map_materials
             
-            self.logger.info(f"Found {material_count} material associations")
+            self.materials, self.material_stats = map_materials(
+                self.elements,
+                self.ifc_file,
+                self.ifc_schema
+            )
+            
+            self.logger.info("Mapped {} materials".format(len(self.materials)))
             
         except Exception as e:
-            self.logger.warning(f"Error extracting materials: {str(e)}")
+            self.logger.warning("Error mapping materials: {}".format(str(e)))
     
     def _extract_quantities(self):
         """Fase 7: Extract quantities (volumes, areas, etc.) from elements"""
