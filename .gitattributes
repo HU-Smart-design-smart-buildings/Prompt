@@ -1,1 +1,2 @@
+23BIM.ifc filter=lfs diff=lfs merge=lfs -text
 *.ifc filter=lfs diff=lfs merge=lfs -text
