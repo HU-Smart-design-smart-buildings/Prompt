@@ -8,7 +8,7 @@ Queries IfcRelAssociatesMaterial for each element.
 from typing import List, Dict, Tuple, Optional
 from collections import defaultdict
 
-from src.logger import get_logger
+from logger import get_logger
 
 
 # ============================================================================

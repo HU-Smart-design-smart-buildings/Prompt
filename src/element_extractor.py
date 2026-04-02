@@ -8,8 +8,8 @@ Provides structured data for downstream processing.
 from typing import List, Dict, Tuple, Optional
 from collections import defaultdict
 
-from src.logger import get_logger
-from src.config import BUILDING_ELEMENT_TYPES
+from logger import get_logger
+from config import BUILDING_ELEMENT_TYPES
 
 
 # ============================================================================

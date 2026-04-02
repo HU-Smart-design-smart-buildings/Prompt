@@ -65,6 +65,12 @@ class IFCMaterialExtractor:
         self.element_stats = {}
         self.materials = []
         self.material_stats = {}
+        self.material_types = []
+        self.material_type_stats = {}
+        self.material_property_records = []
+        self.material_property_stats = {}
+        self.quantity_records = []
+        self.quantity_stats = {}
         self.aggregated_data = None
         self.extraction_time = None
         
@@ -79,11 +85,13 @@ class IFCMaterialExtractor:
         Phases:
         1. Load & detect schema (Fase 2)
         2. Extract elements (Fase 3)
-        3. Extract materials (Fase 4-5-6)
-        4. Extract quantities (Fase 7)
-        5. Extract properties (Fase 8)
-        6. Aggregate data (Fase 9)
-        7. Export results (Fase 10)
+        3. Extract materials (Fase 4)
+        4. Determine material types (Fase 5)
+        5. Extract material properties (Fase 6)
+        6. Extract quantities (Fase 7)
+        7. Extract properties (Fase 8)
+        8. Aggregate data (Fase 9)
+        9. Export results (Fase 10)
         
         Returns:
             Dictionary with processing results and statistics
@@ -102,9 +110,17 @@ class IFCMaterialExtractor:
             self.logger.info("PHASE 3: Extracting building elements...")
             self._extract_elements()
             
-            # Fase 4-6: Extract materials
-            self.logger.info("PHASE 4-6: Extracting and mapping materials...")
+            # Fase 4: Extract materials
+            self.logger.info("PHASE 4: Extracting and mapping materials...")
             self._extract_materials()
+
+            # Fase 5: Determine material types
+            self.logger.info("PHASE 5: Determining material types...")
+            self._extract_material_types()
+
+            # Fase 6: Extract material properties
+            self.logger.info("PHASE 6: Extracting material properties...")
+            self._extract_material_properties()
             
             # Fase 7: Extract quantities
             self.logger.info("PHASE 7: Extracting quantities...")
@@ -166,7 +182,7 @@ class IFCMaterialExtractor:
             self.logger.warning("Error extracting elements: {}".format(str(e)))
     
     def _extract_materials(self):
-        """Fase 4-6: Extract and map materials from elements"""
+        """Fase 4: Extract and map materials from elements"""
         if not self.elements:
             self.logger.warning("No elements to extract materials from")
             return
@@ -184,28 +200,63 @@ class IFCMaterialExtractor:
             
         except Exception as e:
             self.logger.warning("Error mapping materials: {}".format(str(e)))
+
+    def _extract_material_types(self):
+        """Fase 5: Determine explicit material types from mapped materials"""
+        if not self.materials:
+            self.logger.warning("No material mappings to extract material types from")
+            return
+
+        try:
+            from material_type_extractor import extract_material_types
+
+            self.material_types, self.material_type_stats = extract_material_types(
+                self.materials,
+                self.ifc_schema
+            )
+
+            self.logger.info("Extracted {} detailed material records".format(len(self.material_types)))
+
+        except Exception as e:
+            self.logger.warning("Error extracting material types: {}".format(str(e)))
     
+    def _extract_material_properties(self):
+        """Fase 6: Extract material properties from detailed material records"""
+        if not self.material_types:
+            self.logger.warning("No material types to extract properties from")
+            return
+
+        try:
+            from material_property_extractor import extract_material_properties
+
+            self.material_property_records, self.material_property_stats = extract_material_properties(
+                self.material_types,
+                self.ifc_schema
+            )
+
+            self.logger.info("Extracted {} material property records".format(len(self.material_property_records)))
+
+        except Exception as e:
+            self.logger.warning("Error extracting material properties: {}".format(str(e)))
+
     def _extract_quantities(self):
         """Fase 7: Extract quantities (volumes, areas, etc.) from elements"""
         if not self.elements:
             self.logger.warning("No elements to extract quantities from")
             return
-        
+
         try:
-            qty_count = 0
-            for elem_info in self.elements:
-                elem = elem_info['object']
-                if hasattr(elem, 'IsDefinedBy') and elem.IsDefinedBy:
-                    for rel in elem.IsDefinedBy:
-                        if rel.is_a("IfcRelDefinesByProperties"):
-                            prop_def = rel.RelatingPropertyDefinition
-                            if prop_def.is_a("IfcElementQuantity"):
-                                qty_count += 1
-            
-            self.logger.info(f"Found {qty_count} quantity definitions")
-            
+            from quantity_extractor import extract_quantities
+
+            self.quantity_records, self.quantity_stats = extract_quantities(
+                self.elements,
+                self.ifc_schema
+            )
+
+            self.logger.info("Extracted {} quantity records".format(len(self.quantity_records)))
+
         except Exception as e:
-            self.logger.warning(f"Error extracting quantities: {str(e)}")
+            self.logger.warning("Error extracting quantities: {}".format(str(e)))
     
     def _extract_properties(self):
         """Fase 8: Extract properties from elements and materials"""
@@ -268,6 +319,7 @@ class IFCMaterialExtractor:
             'input_file': str(self.input_file),
             'ifc_schema': self.ifc_schema,
             'elements_processed': len(self.elements),
+            'quantity_records_processed': len(self.quantity_records),
             'export_file': str(export_file),
             'export_format': self.export_format,
             'processing_time_seconds': self.extraction_time.total_seconds(),
@@ -331,6 +383,7 @@ Examples:
         print(f"Status: {result['status']}")
         print(f"Schema: {result['ifc_schema']}")
         print(f"Elements processed: {result['elements_processed']}")
+        print(f"Quantity records processed: {result.get('quantity_records_processed', 0)}")
         print(f"Export file: {result['export_file']}")
         print(f"Processing time: {result['processing_time_seconds']:.2f}s")
         print("="*70 + "\n")
