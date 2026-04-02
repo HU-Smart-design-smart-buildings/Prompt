@@ -1,0 +1,28 @@
+2026-04-02 11:19:08 - main - INFO - Initialized extractor for 23BIM.ifc
+2026-04-02 11:19:08 - main - INFO - Export format: xlsx
+2026-04-02 11:19:08 - main - INFO - Output directory: C:\Users\cathy\Downloads\Prompt\output
+2026-04-02 11:19:13 - main - INFO - Initialized extractor for 23BIM.ifc
+2026-04-02 11:19:13 - main - INFO - Export format: xlsx
+2026-04-02 11:19:13 - main - INFO - Output directory: C:\Users\cathy\Downloads\Prompt\output
+2026-04-02 11:19:13 - main - INFO - ======================================================================
+2026-04-02 11:19:13 - main - INFO - Starting IFC Material Extraction Pipeline
+2026-04-02 11:19:13 - main - INFO - ======================================================================
+2026-04-02 11:19:13 - main - INFO - PHASE 2: Loading IFC file and detecting schema...
+2026-04-02 11:21:23 - main - INFO - IFC schema detected: IFC2X3
+2026-04-02 11:21:23 - main - INFO - PHASE 3: Extracting building elements...
+2026-04-02 11:21:23 - main - INFO - Found 4946 building elements
+2026-04-02 11:21:23 - main - INFO - Extracted info for 4946 elements
+2026-04-02 11:21:23 - main - INFO - PHASE 4-6: Extracting and mapping materials...
+2026-04-02 11:21:23 - main - INFO - Found 3978 material associations
+2026-04-02 11:21:23 - main - INFO - PHASE 7: Extracting quantities...
+2026-04-02 11:21:24 - main - INFO - Found 0 quantity definitions
+2026-04-02 11:21:24 - main - INFO - PHASE 8: Extracting properties...
+2026-04-02 11:21:24 - main - INFO - Found 11851 property sets
+2026-04-02 11:21:24 - main - INFO - PHASE 9: Aggregating material data...
+2026-04-02 11:21:24 - main - INFO - Aggregated data for 4946 elements
+2026-04-02 11:21:24 - main - INFO - PHASE 10: Exporting results...
+2026-04-02 11:21:24 - main - INFO - Export file created: C:\Users\cathy\Downloads\Prompt\output\material_extraction_20260402_112124.xlsx
+2026-04-02 11:21:24 - main - INFO - ======================================================================
+2026-04-02 11:21:24 - main - INFO - Pipeline completed successfully!
+2026-04-02 11:21:24 - main - INFO - Processing time: 130.64 seconds
+2026-04-02 11:21:24 - main - INFO - ======================================================================
