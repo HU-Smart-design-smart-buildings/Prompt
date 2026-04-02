@@ -21,7 +21,34 @@ De applicatie is opgebouwd uit meerdere gespecialiseerde Python-modules:
 - `config.py` - Configuratie en constanten
 - `logger.py` - Logging en error handling
 
-## Projectfases
+## IFC Format Analyse Resultaat
+
+Twee test-files zijn geanalyseerd:
+- **23BIM.ifc**: Schema = IFC2X3
+- **43BIM.ifc**: Schema = IFC4X3_ADD2
+
+### Material Entity Type Counts
+| Type | IFC2X3 | IFC4X3 | Status |
+|------|--------|---------|--------|
+| IfcMaterial | 1,789 | 3,748 | ✓ Beide |
+| IfcMaterialLayerSet | 1,531 | 177 | ✓ Beide |
+| IfcMaterialLayerSetUsage | Present | Present | ✓ Beide |
+| IfcMaterialConstituentSet | — | 831 | ⚠ Alleen IFC4 |
+| IfcMaterialProfileSet | — | 36 | ⚠ Alleen IFC4 |
+| IfcPropertySet | 13,307 | 47,741 | ✓ Beide |
+
+### Universele Handlers (beide schemas)
+| Handler | IFC2X3 | IFC4X3 | Doel |
+|---------|--------|---------|------|
+| IfcPropertySet | 13,307 | 47,741 | Eigenschappen/metadata |
+| IfcElementQuantity | Present | Present | Volumes, oppervlakten |
+| IfcRelDefinesByType | 968 | 1,105 | Type-definities |
+| IfcRelAssociatesClassification | 47 | 49 | Categorisatie/tags |
+| IfcProductDefinitionShape | 5,781 | 5,784 | Geometrie/dimensies |
+| IfcExtrudedArea + Geometry | 7,506 | 7,476 | 3D vorm data |
+
+**Conclusie**: IFC4X3 is backwards-compatible met IFC2X3, maar bevat extra materiaaltypen.
+Zie `IFC_FORMAT_DIFFERENCES.md` en `IFC_UNIVERSAL_HANDLERS.md` voor volledige analyse en implementatie-richtlijnen.
 
 ### **Fase 1: Initialisatie & Setup**
 - Projectstructuur opzetten met module-layout
@@ -49,37 +76,67 @@ De applicatie is opgebouwd uit meerdere gespecialiseerde Python-modules:
 
 ### **Fase 5: Materiaaltypen Bepalen**
 - **Stap 3**: Expliciete materiaaltype bepaling (geen aannames)
+  - **ANALYSE RESULTAAT**: Beide formats ondersteund (zie IFC_FORMAT_DIFFERENCES.md)
   - Controleer type van `RelatingMaterial` met `is_a()`
   - Verwerk per geval apart:
-    - `IfcMaterial` → .Name uitlezen
-    - `IfcMaterialList` → itereer .Materials
-    - `IfcMaterialLayerSetUsage` → .ForLayerSet.MaterialLayers met dikte
-    - `IfcMaterialLayerSet` → .MaterialLayers
-    - `IfcMaterialProfileSet` (IFC4) → .MaterialProfiles met profiel
-    - `IfcMaterialConstituentSet` (IFC4) → .MaterialConstituents met fractie
+    - `IfcMaterial` → .Name uitlezen (1789x IFC2X3, 3748x IFC4X3)
+    - `IfcMaterialList` → itereer .Materials (beide versies)
+    - `IfcMaterialLayerSet` → .MaterialLayers (1531x IFC2X3, 177x IFC4X3)
+    - `IfcMaterialLayerSetUsage` → .ForLayerSet.MaterialLayers met dikte (beide)
+    - `IfcMaterialProfileSet` (IFC4 ONLY) → .MaterialProfiles met profiel (36x in 43BIM)
+    - `IfcMaterialConstituentSet` (IFC4 ONLY) → .MaterialConstituents met fractie (831x in 43BIM)
   - Onbekende typen loggen zonder te crashen
+  - **Schema-awareness**: Wrap IFC4-specific types in conditional checks
 
 ### **Fase 6: Schema-specifieke Correcties**
 - **Stap 4**: Type-conflicten vermijden op basis van schema
-  - IFC2X3: Geen IfcMaterialConstituentSet beschikbaar
-  - IFC4: Andere nesting van IfcMaterialLayerSetUsage
+  - **ANALYSE RESULTAAT**: 
+    - IFC2X3: IfcMaterialConstituentSet NIET beschikbaar
+    - IFC4X3: IfcMaterialProfileSet en IfcMaterialConstituentSet WEL beschikbaar
+  - Detect schema versie in Fase 2 en bewaar als metadata
+  - IFC2X3: Alleen query IfcMaterial, IfcMaterialList, IfcMaterialLayerSet, IfcMaterialLayerSetUsage
+  - IFC4X3: Inclusief IfcMaterialProfileSet en IfcMaterialConstituentSet
   - Verwerk alleen entities die in het schema aanwezig zijn
-  - Geen try/except als vervanging voor schemakennis
+  - Geen try/except als vervanging voor schemakennis - weet van tevoren wat mogelijk is
 
 ### **Fase 7: Hoeveelheden Extraheren**
 - **Stap 5**: Kwantiteiten per element
+  - **UNIVERSELE HANDLER**: IfcElementQuantity (beide schemas)
   - Loop `element.IsDefinedBy`
   - Filter op `IfcRelDefinesByProperties`
   - Controleer `rel.RelatingPropertyDefinition.is_a("IfcElementQuantity")`
   - Lees beschikbare kwantiteiten: NetVolume, GrossVolume, NetArea, GrossArea, Length
+  - Beschikbare Quantity Types (beide versies):
+    - `IfcQuantityVolume` (m³)
+    - `IfcQuantityArea` (m²)  
+    - `IfcQuantityLength` (m)
+    - `IfcQuantityCount` (items)
+    - `IfcQuantityWeight` (kg)
   - Gebruik `.wrappedValue` voor werkelijke waarden
   - Ontbrekende waarden als None, niet als 0
 
 ### **Fase 8: Properties Extraheren**
 - **Stap 6**: Relevante material- en element-properties
-  - Via `IfcPropertySet` in `IsDefinedBy`-loop
-  - Per property: `prop.NominalValue.wrappedValue`
-  - Belangrijk: Pset_MaterialCommon (MassDensity), element-specifieke Psets
+  - **UNIVERSELE HANDLERS** (beide schemas):
+    1. **IfcPropertySet** (13,307x IFC2X3, 47,741x IFC4X3)
+       - Via `IfcRelDefinesByProperties` in `IsDefinedBy`-loop
+       - Property types: IfcPropertySingleValue, IfcPropertyEnumeratedValue, IfcPropertyBoundedValue
+       - Interessante Psets: Pset_BuildingElementProxyCommon, Pset_SlabCommon, Pset_WallCommon, Pset_DoorCommon, Pset_WindowCommon
+    
+    2. **IfcRelDefinesByType** (968x IFC2X3, 1,105x IFC4X3)
+       - Parametrische type-definities per element
+       - Extract type properties voor use als defaults
+    
+    3. **IfcRelAssociatesClassification** (47x IFC2X3, 49x IFC4X3)
+       - Categorisatie/Uniformat info
+       - ItemReference en ReferencedSource
+    
+    4. **Material Properties** (via material.HasProperties)
+       - MassDensity (kg/m³), YoungModulus, ThermalConductivity, Cost
+  
+  - Per property: `prop.NominalValue.wrappedValue` voor SingleValue
+  - EnumeratedValue: iterate .EnumerationValues (list)
+  - BoundedValue: .LowerBoundValue / .UpperBoundValue
   - Geen default-waarden invullen
 
 ### **Fase 9: Materiaallijsten Aggregeren**
