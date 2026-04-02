@@ -1,0 +1,35 @@
+2026-04-02 11:34:58 - ifc_reader - INFO - ======================================================================
+2026-04-02 11:34:58 - ifc_reader - INFO - FASE 2: IFC Schema Detection & File Reading
+2026-04-02 11:34:58 - ifc_reader - INFO - ======================================================================
+2026-04-02 11:34:58 - ifc_reader - INFO - Input file: 23BIM.ifc
+2026-04-02 11:34:58 - ifc_reader - INFO - File size: 988.70 MB
+2026-04-02 11:34:58 - ifc_reader - INFO - Opening IFC file...
+2026-04-02 11:37:01 - ifc_reader - INFO - File opened successfully
+2026-04-02 11:37:01 - ifc_reader - INFO - Detecting IFC schema...
+2026-04-02 11:37:01 - ifc_reader - INFO - Schema detected: IFC2X3
+2026-04-02 11:37:01 - ifc_reader - INFO - Validating schema...
+2026-04-02 11:37:01 - ifc_reader - INFO - Schema is fully supported
+2026-04-02 11:37:01 - ifc_reader - INFO - ----------------------------------------------------------------------
+2026-04-02 11:37:01 - ifc_reader - INFO - FILE SUMMARY:
+2026-04-02 11:37:01 - ifc_reader - INFO -   Path: C:\Users\cathy\Downloads\Prompt\data\23BIM.ifc
+2026-04-02 11:37:01 - ifc_reader - INFO -   Schema: IFC2X3
+2026-04-02 11:37:01 - ifc_reader - INFO -   File object: file
+2026-04-02 11:37:01 - ifc_reader - INFO - ----------------------------------------------------------------------
+2026-04-02 11:37:01 - ifc_reader - INFO - ======================================================================
+2026-04-02 11:37:01 - ifc_reader - INFO - FASE 2: IFC Schema Detection & File Reading
+2026-04-02 11:37:01 - ifc_reader - INFO - ======================================================================
+2026-04-02 11:37:01 - ifc_reader - INFO - Input file: 43BIM.ifc
+2026-04-02 11:37:01 - ifc_reader - INFO - File size: 1001.08 MB
+2026-04-02 11:37:01 - ifc_reader - INFO - Opening IFC file...
+2026-04-02 11:41:10 - ifc_reader - INFO - File opened successfully
+2026-04-02 11:41:10 - ifc_reader - INFO - Detecting IFC schema...
+2026-04-02 11:41:10 - ifc_reader - INFO - Schema detected: IFC4X3
+2026-04-02 11:41:10 - ifc_reader - INFO - Validating schema...
+2026-04-02 11:41:10 - ifc_reader - WARNING - Schema 'IFC4X3' not in official supported list: ['IFC2X3', 'IFC4X3_ADD2']
+2026-04-02 11:41:10 - ifc_reader - WARNING - Continuing anyway (may work or may have issues)
+2026-04-02 11:41:10 - ifc_reader - INFO - ----------------------------------------------------------------------
+2026-04-02 11:41:10 - ifc_reader - INFO - FILE SUMMARY:
+2026-04-02 11:41:10 - ifc_reader - INFO -   Path: C:\Users\cathy\Downloads\Prompt\data\43BIM.ifc
+2026-04-02 11:41:10 - ifc_reader - INFO -   Schema: IFC4X3
+2026-04-02 11:41:10 - ifc_reader - INFO -   File object: file
+2026-04-02 11:41:10 - ifc_reader - INFO - ----------------------------------------------------------------------

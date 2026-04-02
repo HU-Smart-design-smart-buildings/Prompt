@@ -1,3 +1,53 @@
+# Fase 2: IFC Schema Detectie & File Reading - Implementatie Plan
+
+## Overzicht
+
+**Doel**: IFC-bestand veilig inlezen en schema versie detecteren
+**Input**: Path naar IFC bestand
+**Output**: Loaded IFC file object + Schema version
+**Dependencies**: Fase 1 (config, logger, main framework)
+
+---
+
+## Fase 2 Stap 0 Details
+
+### **Wat moet gebeuren**
+
+1. ✅ IFC-bestand openen met `ifcopenshell.open()`
+2. ✅ Schema versie uitlezen (`ifc.schema`)
+3. ✅ Schema validatie (is het ondersteund?)
+4. ✅ File validatie (IFC format check)
+5. ✅ Error handling (niet-bestaande file, corrupt file, etc.)
+6. ✅ Logging van alle stappen
+
+### **Waarom Schema Belangrijk Is**
+
+Schema bepaalt:
+- Welke material types beschikbaar zijn
+- Welke property sets beschikbaar zijn
+- Welke entities kunnen voorkomen
+- Hoe data genest is (andere nesting in IFC2X3 vs IFC4)
+
+Voorbeeld uit onze analyse:
+```
+IFC2X3:
+  - IfcMaterial: 1,789 instances
+  - IfcMaterialLayerSet: 1,531 instances
+  - IfcMaterialConstituentSet: NOT AVAILABLE
+
+IFC4X3_ADD2:
+  - IfcMaterial: 3,748 instances
+  - IfcMaterialLayerSet: 177 instances
+  - IfcMaterialConstituentSet: 831 instances ← NEW!
+```
+
+---
+
+## Implementation Plan
+
+### **File: src/ifc_reader.py**
+
+```python
 """
 IFC File Reader - Fase 2 Implementation
 
@@ -8,10 +58,8 @@ Entry point for all IFC processing.
 import ifcopenshell
 from pathlib import Path
 from typing import Tuple, Optional
-
 from logger import get_logger, IFCReadError
-from config import SUPPORTED_SCHEMAS
-
+from config import SUPPORTED_SCHEMAS, PROJECT_ROOT
 
 # ============================================================================
 # IFC_READER CLASS
@@ -104,20 +152,14 @@ class IFCFileReader:
             )
         
         # Check readable
-        try:
-            file_size = path.stat().st_size
-            if file_size <= 0:
-                raise IFCReadError(
-                    "File is empty: {}".format(path)
-                )
-        except Exception as e:
+        if not path.stat().st_size > 0:
             raise IFCReadError(
-                "Cannot read file: {}".format(str(e))
+                "File is empty: {}".format(path)
             )
         
         self.logger.info("Input file: {}".format(path.name))
         self.logger.info("File size: {:.2f} MB".format(
-            file_size / (1024*1024)
+            path.stat().st_size / (1024*1024)
         ))
         
         return path
@@ -201,7 +243,7 @@ class IFCFileReader:
         self.logger.info("FILE SUMMARY:")
         self.logger.info("  Path: {}".format(self.file_path))
         self.logger.info("  Schema: {}".format(self.schema))
-        self.logger.info("  File object: {}".format(type(self.ifc_file).__name__))
+        self.logger.info("  File object: {}".format(type(self.ifc_file)))
         self.logger.info("-" * 70)
     
     # ========================================================================
@@ -226,7 +268,7 @@ class IFCFileReader:
     
     def is_schema_4x(self) -> bool:
         """Check if schema is IFC4.x"""
-        return self.schema and self.schema.startswith("IFC4")
+        return self.schema.startswith("IFC4")
 
 
 # ============================================================================
@@ -250,4 +292,197 @@ def load_ifc_file(file_path: str) -> Tuple[object, str]:
     """
     reader = IFCFileReader()
     return reader.read_file(file_path)
+```
 
+---
+
+## Integration met main.py (Fase 1)
+
+In `src/main.py`, methode `_load_and_detect_schema()`:
+
+```python
+def _load_and_detect_schema(self):
+    """Fase 2: Load IFC file and detect schema version"""
+    from ifc_reader import load_ifc_file  # Import hier
+    
+    try:
+        self.ifc_file, self.ifc_schema = load_ifc_file(str(self.input_file))
+        self.logger.info("Schema detected: {}".format(self.ifc_schema))
+        
+    except Exception as e:
+        raise IFCReadError("Failed to load IFC file: {}".format(str(e)))
+```
+
+---
+
+## Testing Strategy
+
+### **Unit Tests**
+
+```python
+# test_ifc_reader.py
+
+import pytest
+from pathlib import Path
+from ifc_reader import IFCFileReader
+from logger import IFCReadError
+
+class TestIFCFileReader:
+    
+    def test_valid_ifc23_file(self):
+        """Test loading valid IFC2X3 file"""
+        reader = IFCFileReader()
+        ifc_file, schema = reader.read_file("data/23BIM.ifc")
+        
+        assert schema == "IFC2X3"
+        assert ifc_file is not None
+    
+    def test_valid_ifc4_file(self):
+        """Test loading valid IFC4 file"""
+        reader = IFCFileReader()
+        ifc_file, schema = reader.read_file("data/43BIM.ifc")
+        
+        assert schema == "IFC4X3_ADD2"
+        assert ifc_file is not None
+    
+    def test_file_not_found(self):
+        """Test error handling for missing file"""
+        reader = IFCFileReader()
+        
+        with pytest.raises(IFCReadError):
+            reader.read_file("nonexistent.ifc")
+    
+    def test_invalid_format(self):
+        """Test error handling for invalid file"""
+        reader = IFCFileReader()
+        
+        # Create temp non-IFC file
+        with open("/tmp/test.txt", "w") as f:
+            f.write("not an IFC file")
+        
+        with pytest.raises(IFCReadError):
+            reader.read_file("/tmp/test.txt")
+    
+    def test_schema_detection_accuracy(self):
+        """Test that correct schema is detected"""
+        reader = IFCFileReader()
+        
+        # IFC2X3
+        _, schema23 = reader.read_file("data/23BIM.ifc")
+        assert "2X3" in schema23
+        
+        # IFC4
+        _, schema4 = reader.read_file("data/43BIM.ifc")
+        assert "4" in schema4
+```
+
+---
+
+## Logging Output (Expected)
+
+```
+2026-04-02 09:30:00 - ifc_reader - INFO - ======================================================================
+2026-04-02 09:30:00 - ifc_reader - INFO - FASE 2: IFC Schema Detection & File Reading
+2026-04-02 09:30:00 - ifc_reader - INFO - ======================================================================
+2026-04-02 09:30:00 - ifc_reader - INFO - Input file: 23BIM.ifc
+2026-04-02 09:30:00 - ifc_reader - INFO - File size: 125.43 MB
+2026-04-02 09:30:01 - ifc_reader - INFO - Opening IFC file...
+2026-04-02 09:30:02 - ifc_reader - INFO - File opened successfully
+2026-04-02 09:30:02 - ifc_reader - INFO - Detecting IFC schema...
+2026-04-02 09:30:02 - ifc_reader - INFO - Schema detected: IFC2X3
+2026-04-02 09:30:02 - ifc_reader - INFO - Validating schema...
+2026-04-02 09:30:02 - ifc_reader - INFO - Schema is fully supported
+2026-04-02 09:30:02 - ifc_reader - INFO - ----------------------------------------------------------------------
+2026-04-02 09:30:02 - ifc_reader - INFO - FILE SUMMARY:
+2026-04-02 09:30:02 - ifc_reader - INFO -   Path: C:\Users\...\data\23BIM.ifc
+2026-04-02 09:30:02 - ifc_reader - INFO -   Schema: IFC2X3
+2026-04-02 09:30:02 - ifc_reader - INFO -   File object: <class 'ifcopenshell.file.file'>
+2026-04-02 09:30:02 - ifc_reader - INFO - ----------------------------------------------------------------------
+```
+
+---
+
+## Deliverables (Fase 2)
+
+- [x] **src/ifc_reader.py** - Complete implementation
+- [x] **Integration** - Works with main.py
+- [x] **Logging** - All operations logged
+- [x] **Error Handling** - Proper exception handling
+- [x] **Documentation** - Code is well commented
+- [ ] **Tests** - Unit tests (optional for phase 2)
+
+---
+
+## Success Criteria
+
+- ✅ Can open IFC2X3 files
+- ✅ Can open IFC4X3 files
+- ✅ Correctly detects schema version
+- ✅ Validates file before processing
+- ✅ Proper error messages on failure
+- ✅ All operations logged
+- ✅ Integrates with Fase 1 framework
+- ✅ Ready for Fase 3 (element extraction)
+
+---
+
+## Fase 2 Flow Diagram
+
+```
+Input: IFC file path
+    ↓
+[_validate_file_path]
+  - Check exists
+  - Check is file
+  - Check extension
+  - Check readable
+    ↓
+[_open_ifc_file]
+  - ifcopenshell.open()
+  - Error handling
+    ↓
+[_detect_schema]
+  - Read ifc.schema
+  - Normalize format
+    ↓
+[_validate_schema]
+  - Check SUPPORTED_SCHEMAS
+  - Log warning if unknown
+    ↓
+[_log_summary]
+  - Summary to logger
+    ↓
+Output: (ifc_file_object, schema_string)
+```
+
+---
+
+## Dependencies
+
+- ✅ ifcopenshell (already installed)
+- ✅ Fase 1 framework (config, logger)
+- ✅ Python stdlib (pathlib, typing)
+
+---
+
+## Timeline
+
+| Task | Duration |
+|------|----------|
+| Write IFCFileReader class | 15 min |
+| Implement validation methods | 20 min |
+| Add error handling | 15 min |
+| Integration tests | 10 min |
+| Documentation | 10 min |
+| **Total** | **~70 min** |
+
+---
+
+## Volgende Stappen na Fase 2
+
+Zodra Fase 2 compleet is, beginnen we met **Fase 3: Element Extraction**
+
+Fase 3 zal gebruiken:
+- ✅ ifc_file object (van Fase 2)
+- ✅ schema information (van Fase 2)
+- ➕ ifc_file.by_type("IfcElement", include_subtypes=True)

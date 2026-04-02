@@ -26,3 +26,9 @@
 2026-04-02 11:21:24 - main - INFO - Pipeline completed successfully!
 2026-04-02 11:21:24 - main - INFO - Processing time: 130.64 seconds
 2026-04-02 11:21:24 - main - INFO - ======================================================================
+2026-04-02 11:43:09 - ifc_reader - INFO - ======================================================================
+2026-04-02 11:43:09 - ifc_reader - INFO - FASE 2: IFC Schema Detection & File Reading
+2026-04-02 11:43:09 - ifc_reader - INFO - ======================================================================
+2026-04-02 11:43:09 - ifc_reader - INFO - Input file: 23BIM.ifc
+2026-04-02 11:43:09 - ifc_reader - INFO - File size: 988.70 MB
+2026-04-02 11:43:09 - ifc_reader - INFO - Opening IFC file...

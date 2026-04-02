@@ -62,6 +62,7 @@ class IFCMaterialExtractor:
         self.ifc_file = None
         self.ifc_schema = None
         self.elements = []
+        self.element_stats = {}
         self.materials = []
         self.aggregated_data = None
         self.extraction_time = None
@@ -137,48 +138,31 @@ class IFCMaterialExtractor:
     
     def _load_and_detect_schema(self):
         """Fase 2: Load IFC file and detect schema version"""
+        from ifc_reader import load_ifc_file
+        
         try:
-            import ifcopenshell
-            self.ifc_file = ifcopenshell.open(str(self.input_file))
-            self.ifc_schema = self.ifc_file.schema
-            
-            if self.ifc_schema not in SUPPORTED_SCHEMAS:
-                self.logger.warning(
-                    f"Schema '{self.ifc_schema}' not explicitly supported. "
-                    f"Supported: {SUPPORTED_SCHEMAS}"
-                )
-            
-            self.logger.info(f"IFC schema detected: {self.ifc_schema}")
+            self.ifc_file, self.ifc_schema = load_ifc_file(str(self.input_file))
             
         except Exception as e:
-            raise IFCReadError(f"Failed to load IFC file: {str(e)}")
+            raise IFCReadError("Failed to load IFC file: {}".format(str(e)))
     
     def _extract_elements(self):
         """Fase 3: Extract all building elements"""
+        from element_extractor import extract_elements
+        
         if not self.ifc_file:
             raise IFCReadError("IFC file not loaded")
         
         try:
-            # Get all IfcElement objects (includes subtypes)
-            all_elements = self.ifc_file.by_type("IfcElement", include_subtypes=True)
+            self.elements, self.element_stats = extract_elements(
+                self.ifc_file,
+                self.ifc_schema
+            )
             
-            self.logger.info(f"Found {len(all_elements)} building elements")
-            
-            # Extract basic info
-            self.elements = []
-            for elem in all_elements:
-                element_info = {
-                    'global_id': elem.GlobalId if hasattr(elem, 'GlobalId') else None,
-                    'name': elem.Name if hasattr(elem, 'Name') else 'Unknown',
-                    'type': elem.is_a(),
-                    'object': elem
-                }
-                self.elements.append(element_info)
-            
-            self.logger.info(f"Extracted info for {len(self.elements)} elements")
+            self.logger.info("Extracted {} elements".format(len(self.elements)))
             
         except Exception as e:
-            raise IFCReadError(f"Failed to extract elements: {str(e)}")
+            self.logger.warning("Error extracting elements: {}".format(str(e)))
     
     def _extract_materials(self):
         """Fase 4-6: Extract and map materials from elements"""
